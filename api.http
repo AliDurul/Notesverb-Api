@@ -1,0 +1,29 @@
+@token = Bearer {{register.response.body.data.accessToken}}
+@refresh_token = {{register.response.body.data.refreshToken}}
+
+
+
+# Health Check
+get http://localhost:3001/health
+
+
+### Auth Service
+
+# @name register
+post http://localhost:3001/auth/register
+Content-Type: application/json
+
+{
+    "email":"test3@gmail.com",
+    "password":"Test@1234"
+}
+
+###
+
+# @name refreshToken
+post http://localhost:3001/auth/refresh
+Content-Type: application/json
+
+{
+    "refreshToken": "{{refresh_token}}"
+}

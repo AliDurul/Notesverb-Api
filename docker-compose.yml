@@ -1,0 +1,23 @@
+services:
+  postgres:
+    container_name: notesverb-postgres
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: notesverb
+      POSTGRES_PASSWORD: notesverb123
+      POSTGRES_DB: notesverb_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-database.sql:/docker-entrypoint-initdb.d/init-database.sql
+    networks:
+      - notesverb-network
+
+volumes:
+  postgres-data:
+    driver: local
+
+networks:
+  notesverb-network:
+    driver: bridge
