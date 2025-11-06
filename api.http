@@ -1,10 +1,10 @@
-@token = Bearer {{register.response.body.data.accessToken}}
+@token = Bearer {{login.response.body.data.accessToken}}
 @refresh_token = {{register.response.body.data.refreshToken}}
 
 
 
 # Health Check
-get http://localhost:3001/health
+get http://localhost:8080/health
 
 
 ### Auth Service
@@ -18,7 +18,8 @@ Content-Type: application/json
     "password":"Test@1234"
 }
 
-###
+### 
+
 
 # @name refreshToken
 post http://localhost:3001/auth/refresh
@@ -26,4 +27,67 @@ Content-Type: application/json
 
 {
     "refreshToken": "{{refresh_token}}"
+}
+
+###
+
+# @name login
+post http://localhost:3001/auth/login
+Content-Type: application/json
+
+{
+    "email":"test3@gmail.com",
+    "password":"Test@1234"
+}
+
+### User Service
+
+# @name getProfile
+get http://localhost:3002/users/profile
+Authorization: {{token}}
+
+###
+
+# @name updateProfile
+put http://localhost:3002/users/profile 
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+    "firstName": "John",
+    "lastName": "Doe",
+    "bio": "Software Developer"
+}
+
+### Api Gateway
+
+# @name auth-login
+post http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+    "email":"test3@gmail.com",
+    "password":"Test@1234"
+}
+
+### 
+
+# @name auth-register
+post http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+    "email":"test3@gmail.com",
+    "password":"Test@1234"
+}
+
+###
+
+# @name auth-profile
+post http://localhost:3002/user-profiles
+Content-Type: application/json
+
+{
+    "email":"test3@gmail.com",
+    "password":"Test@1234"
 }

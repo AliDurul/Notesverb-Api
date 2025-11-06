@@ -13,12 +13,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
+model Credential {
   id        String   @id @default(uuid())
+  userId    String   @unique
   email     String   @unique
   password  String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
   refreshTokens RefreshToken[]
@@ -27,14 +28,14 @@ model User {
 }
 
 model RefreshToken {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  token     String   @unique
-  expiresAt DateTime @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  id           String   @id @default(uuid())
+  credentialId String
+  token        String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
 
   // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user Credential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
 }

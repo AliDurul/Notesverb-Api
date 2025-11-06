@@ -4,8 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon --exec \"npx ts-node -r tsconfig-paths/register --transpile-only src/index.ts\"",
-    "test": "jest --runInBand"
+    "dev": "nodemon --watch src --ext ts,js --exec \"npx ts-node -r tsconfig-paths/register --transpile-only src/index.ts\""
   },
   "keywords": [],
   "author": "",
@@ -20,12 +19,14 @@
     "@types/ms": "^2.1.0",
     "@types/node": "^24.10.0",
     "jest": "^30.2.0",
+    "prisma": "^6.19.0",
     "ts-jest": "^29.4.5",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3"
   },
   "dependencies": {
     "@prisma/client": "^6.18.0",
+    "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",

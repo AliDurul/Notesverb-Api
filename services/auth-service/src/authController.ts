@@ -61,23 +61,23 @@ export const validateToken = asyncHandler(
   }
 );
 
-export const getProfile = asyncHandler(async (req: Request, res: Response) => {
-  const userId = req.user?.userId;
+// export const getProfile = asyncHandler(async (req: Request, res: Response) => {
+//   const userId = req.user?.userId;
 
-  if (!userId) {
-    return res.status(401).json(createErrorResponse("Unauthorized"));
-  }
+//   if (!userId) {
+//     return res.status(401).json(createErrorResponse("Unauthorized"));
+//   }
 
-  const user = await authService.getUserById(userId);
+//   const user = await authService.getUserById(userId);
 
-  if (!user) {
-    return res.status(404).json(createErrorResponse("User not found"));
-  }
+//   if (!user) {
+//     return res.status(404).json(createErrorResponse("User not found"));
+//   }
 
-  return res
-    .status(200)
-    .json(createSuccessResponse(user, "User profile retrieved"));
-});
+//   return res
+//     .status(200)
+//     .json(createSuccessResponse(user, "User profile retrieved"));
+// });
 
 export const deleteAccount = asyncHandler(
   async (req: Request, res: Response) => {

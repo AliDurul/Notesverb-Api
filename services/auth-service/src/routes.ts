@@ -6,28 +6,19 @@ import { loginSchema, refreshTokenSchema, registerSchema } from "./validations";
 const router = Router();
 
 //public routes
-router.post(
-  "/register",
-  validateRequest(registerSchema),
-  authController.register
-);
 router.post("/login", validateRequest(loginSchema), authController.login);
-router.post(
-  "/refresh",
-  validateRequest(refreshTokenSchema),
-  authController.refreshTokens
-);
-router.post(
-  "/logout",
-  validateRequest(refreshTokenSchema),
-  authController.logout
-);
+
+router.post("/register", validateRequest(registerSchema), authController.register);
+
+router.post("/refresh", validateRequest(refreshTokenSchema), authController.refreshTokens);
+
+router.post("/logout", authController.logout);
 
 // Token validation endpoint ( for other services to validate tokens )
 router.post("/validate", authController.validateToken);
 
 // Protected routes
-router.get("/profile", authenticateToken, authController.getProfile);
-router.delete("/profile", authenticateToken, authController.deleteAccount);
+// router.get("/profile", authenticateToken, authController.getProfile);
+router.delete("/", authenticateToken, authController.deleteAccount);
 
 export default router;

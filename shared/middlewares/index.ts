@@ -89,10 +89,10 @@ export function errorHandler(
 
 export function corsOptions() {
   return {
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+    origin: "*",
     credentials: process.env.CORS_CREDENTIALS === "true",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", 'X-Internal-Request'],
   };
 }
 

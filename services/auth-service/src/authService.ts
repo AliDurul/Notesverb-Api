@@ -4,6 +4,8 @@ import jwt, { SignOptions } from "jsonwebtoken";
 import { StringValue } from "ms";
 import { AuthTokens, JWTPayload, ServiceError } from "@shared/types";
 import { createServiceError } from "@shared/utils";
+import axios from "axios";
+import { v4 as uuidv4 } from "uuid";
 
 export class AuthService {
   private readonly jwtSecret: string;
@@ -11,6 +13,7 @@ export class AuthService {
   private readonly jwtExpiresIn: string;
   private readonly jwtRefreshExpiresIn: string;
   private readonly bcryptRounds: number;
+  private readonly userServiceUrl: string;
 
   constructor() {
     this.jwtSecret = process.env.JWT_SECRET!;
@@ -18,6 +21,7 @@ export class AuthService {
     this.jwtExpiresIn = process.env.JWT_EXPIRES_IN || "15m";
     this.jwtRefreshExpiresIn = process.env.JWT_REFRESH_EXPIRES_IN || "7d";
     this.bcryptRounds = parseInt(process.env.BCRYPT_ROUNDS || "10", 10);
+    this.userServiceUrl = process.env.USER_SERVICE_URL || 'http://localhost:3002';
 
     if (!this.jwtSecret || !this.jwtRefreshSecret) {
       throw new Error("JWT secrets are not defined in environment variables");
@@ -26,7 +30,7 @@ export class AuthService {
 
   async register(email: string, password: string): Promise<AuthTokens> {
     // check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.credential.findUnique({
       where: { email },
     });
 
@@ -37,21 +41,47 @@ export class AuthService {
     // hash the password
     const hashedPassword = await bcrypt.hash(password, this.bcryptRounds);
 
+    const userId = uuidv4();
+
     // create the user
-    const user = await prisma.user.create({
+    const credential = await prisma.credential.create({
       data: {
         email,
         password: hashedPassword,
+        userId
       },
     });
 
+    try {
+      await axios.post(`${this.userServiceUrl}/user-profiles/`, {
+        id: userId,
+        email,
+      }, {
+        headers: {
+          'X-Internal-Request': 'true', // Internal service call flag
+          // 'X-Service-Token': process.env.SERVICE_SECRET
+        }
+      });
+    } catch (error: any) {
+
+      console.log('register error:', error.message);
+      // Rollback: Delete credential if user creation fails
+      await prisma.credential.delete({
+        where: { id: credential.id },
+      });
+
+      throw createServiceError(error.message, 401);
+    }
+
+
+
     // generate tokens
-    return this.generateTokens(user.id, user.email);
+    return this.generateTokens(credential.id, credential.email);
   }
 
   async login(email: string, password: string): Promise<AuthTokens> {
     // find the user
-    const user = await prisma.user.findUnique({
+    const user = await prisma.credential.findUnique({
       where: { email },
     });
 
@@ -119,7 +149,7 @@ export class AuthService {
       const decoded = jwt.verify(token, this.jwtSecret) as JWTPayload;
 
       // Check if the user exists
-      const user = await prisma.user.findUnique({
+      const user = await prisma.credential.findUnique({
         where: { id: decoded.userId },
       });
 
@@ -142,7 +172,7 @@ export class AuthService {
   ): Promise<AuthTokens> {
     const payload = { userId, email };
 
-    // Generate access token
+    // Generate access token (always new)
     const accessTokenOptions: SignOptions = {
       expiresIn: this.jwtExpiresIn as StringValue,
     };
@@ -153,7 +183,23 @@ export class AuthService {
       accessTokenOptions
     ) as string;
 
-    // Generate refresh token
+    // Check if user already has a refresh token
+    const existingRefreshToken = await prisma.refreshToken.findFirst({
+      where: { credentialId: userId },
+      orderBy: { createdAt: 'desc' }, // Get the most recent one
+    });
+
+    const now = new Date();
+
+    // If refresh token exists and is still valid, return it
+    if (existingRefreshToken && existingRefreshToken.expiresAt > now) {
+      return {
+        accessToken,
+        refreshToken: existingRefreshToken.token,
+      };
+    }
+
+    // Generate new refresh token (if none exists or expired)
     const refreshTokenOptions: SignOptions = {
       expiresIn: this.jwtRefreshExpiresIn as StringValue,
     };
@@ -163,17 +209,28 @@ export class AuthService {
       refreshTokenOptions
     ) as string;
 
-    // Store refresh token in the database
+    // Calculate expiration date
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
 
-    await prisma.refreshToken.create({
-      data: {
-        userId,
-        token: refreshToken,
-        expiresAt,
-      },
-    });
+    // If expired token exists, update it; otherwise create new one
+    if (existingRefreshToken) {
+      await prisma.refreshToken.update({
+        where: { id: existingRefreshToken.id },
+        data: {
+          token: refreshToken,
+          expiresAt,
+        },
+      });
+    } else {
+      await prisma.refreshToken.create({
+        data: {
+          credentialId: userId,
+          token: refreshToken,
+          expiresAt,
+        },
+      });
+    }
 
     return {
       accessToken,
@@ -182,7 +239,7 @@ export class AuthService {
   }
 
   async getUserById(userId: string) {
-    const user = await prisma.user.findUnique({
+    const user = await prisma.credential.findUnique({
       where: { id: userId },
       select: {
         id: true,
@@ -200,7 +257,7 @@ export class AuthService {
   }
 
   async deleteUser(userId: string): Promise<void> {
-    await prisma.user.delete({
+    await prisma.credential.delete({
       where: { id: userId },
     });
   }
