@@ -28,6 +28,8 @@ export interface UserProfile {
 }
 
 export interface UpdateProfileRequest {
+  id: string;
+  email?: string;
   firstName?: string | null;
   lastName?: string | null;
   bio?: string | null;

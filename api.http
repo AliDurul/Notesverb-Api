@@ -1,44 +1,10 @@
 @token = Bearer {{login.response.body.data.accessToken}}
-@refresh_token = {{register.response.body.data.refreshToken}}
-
+@refreshToken = {{login.response.body.data.refreshToken}}
 
 
 # Health Check
 get http://localhost:8080/health
 
-
-### Auth Service
-
-# @name register
-post http://localhost:3001/auth/register
-Content-Type: application/json
-
-{
-    "email":"test3@gmail.com",
-    "password":"Test@1234"
-}
-
-### 
-
-
-# @name refreshToken
-post http://localhost:3001/auth/refresh
-Content-Type: application/json
-
-{
-    "refreshToken": "{{refresh_token}}"
-}
-
-###
-
-# @name login
-post http://localhost:3001/auth/login
-Content-Type: application/json
-
-{
-    "email":"test3@gmail.com",
-    "password":"Test@1234"
-}
 
 ### User Service
 
@@ -59,12 +25,16 @@ Authorization: {{token}}
     "bio": "Software Developer"
 }
 
-### Api Gateway
+############################# Api Gateway #############################
 
-# @name auth-login
+
+### User Service ###
+
+
+# @name login
 post http://localhost:8080/api/auth/login
 Content-Type: application/json
-
+    
 {
     "email":"test3@gmail.com",
     "password":"Test@1234"
@@ -72,7 +42,7 @@ Content-Type: application/json
 
 ### 
 
-# @name auth-register
+# @name register
 post http://localhost:8080/api/auth/register
 Content-Type: application/json
 
@@ -83,11 +53,29 @@ Content-Type: application/json
 
 ###
 
-# @name auth-profile
-post http://localhost:3002/user-profiles
+# @name refresh
+post http://localhost:8080/api/auth/refresh
 Content-Type: application/json
 
 {
-    "email":"test3@gmail.com",
-    "password":"Test@1234"
+    "refreshToken": "{{refreshToken}}"
 }
+
+###
+
+# @name logout
+post http://localhost:8080/api/auth/logout
+Content-Type: application/json
+Authorization: {{token}}
+
+
+###
+
+# @name deleteAccount
+delete http://localhost:8080/api/auth/
+Authorization: {{token}}
+
+
+
+### User Service ###
+

@@ -13,14 +13,16 @@ export class UserService {
   async createProfile(
     profileData: Partial<UpdateProfileRequest>
   ): Promise<UserProfile> {
-    console.log('object');
+    console.log('profileData', profileData);
     // sanitize input data
-    const sanitizedData = this.sanitizeProfileData(profileData);
-    console.log(sanitizedData);
+    // const sanitizedData = this.sanitizeProfileData(profileData);
 
     // create new profile
     const profile = await prisma.userProfile.create({
-      data: sanitizedData,
+      data: {
+        id: profileData.id,
+        email: profileData.email!,
+      },
     });
 
     return profile;
@@ -53,12 +55,12 @@ export class UserService {
     }
 
     // sanitize input data
-    const sanitizedData = this.sanitizeProfileData(profileData);
+    // const sanitizedData = this.sanitizeProfileData(profileData);
 
     // update existing profile
     const updatedProfile = await prisma.userProfile.update({
       where: { id },
-      data: sanitizedData,
+      data: profileData,
     });
 
     return updatedProfile;
@@ -78,35 +80,35 @@ export class UserService {
     });
   }
 
-  private sanitizeProfileData(
-    data: Partial<UpdateProfileRequest>
-  ): Partial<UpdateProfileRequest> {
-    const sanitized: any = {};
+  // private sanitizeProfileData(
+  //   data: Partial<UpdateProfileRequest>
+  // ): Partial<UpdateProfileRequest> {
+  //   const sanitized: any = {};
 
-    if (data.firstName !== undefined) {
-      sanitized.firstName = data.firstName
-        ? sanitizeInput(data.firstName)
-        : null;
-    }
+  //   if (data.firstName !== undefined) {
+  //     sanitized.firstName = data.firstName
+  //       ? sanitizeInput(data.firstName)
+  //       : null;
+  //   }
 
-    if (data.lastName !== undefined) {
-      sanitized.lastName = data.lastName ? sanitizeInput(data.lastName) : null;
-    }
+  //   if (data.lastName !== undefined) {
+  //     sanitized.lastName = data.lastName ? sanitizeInput(data.lastName) : null;
+  //   }
 
-    if (data.bio !== undefined) {
-      sanitized.bio = data.bio ? sanitizeInput(data.bio) : null;
-    }
+  //   if (data.bio !== undefined) {
+  //     sanitized.bio = data.bio ? sanitizeInput(data.bio) : null;
+  //   }
 
-    if (data.avatarUrl !== undefined) {
-      sanitized.avatarUrl = data.avatarUrl
-        ? sanitizeInput(data.avatarUrl)
-        : null;
-    }
+  //   if (data.avatarUrl !== undefined) {
+  //     sanitized.avatarUrl = data.avatarUrl
+  //       ? sanitizeInput(data.avatarUrl)
+  //       : null;
+  //   }
 
-    if (data.preferences !== undefined) {
-      sanitized.preferences = data.preferences ? data.preferences : null;
-    }
+  //   if (data.preferences !== undefined) {
+  //     sanitized.preferences = data.preferences ? data.preferences : null;
+  //   }
 
-    return sanitized;
-  }
+  //   return sanitized;
+  // }
 }

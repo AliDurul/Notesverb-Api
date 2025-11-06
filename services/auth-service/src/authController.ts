@@ -81,13 +81,16 @@ export const validateToken = asyncHandler(
 
 export const deleteAccount = asyncHandler(
   async (req: Request, res: Response) => {
-    const userId = req.user?.userId;
+    const credentialId = req.user?.credentialId;
 
-    if (!userId) {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+
+    if (!credentialId) {
       return res.status(401).json(createErrorResponse("Unauthorized"));
     }
 
-    await authService.deleteUser(userId);
+    await authService.deleteUser(credentialId, token);
 
     return res
       .status(200)

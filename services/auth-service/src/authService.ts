@@ -42,6 +42,7 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(password, this.bcryptRounds);
 
     const userId = uuidv4();
+    console.log('this is userId created', userId);
 
     // create the user
     const credential = await prisma.credential.create({
@@ -53,7 +54,7 @@ export class AuthService {
     });
 
     try {
-      await axios.post(`${this.userServiceUrl}/user-profiles/`, {
+      await axios.post(`${this.userServiceUrl}/`, {
         id: userId,
         email,
       }, {
@@ -76,7 +77,7 @@ export class AuthService {
 
 
     // generate tokens
-    return this.generateTokens(credential.id, credential.email);
+    return this.generateTokens(credential.id, credential.email, credential.userId);
   }
 
   async login(email: string, password: string): Promise<AuthTokens> {
@@ -96,7 +97,7 @@ export class AuthService {
     }
 
     // generate tokens
-    return this.generateTokens(user.id, user.email);
+    return this.generateTokens(user.id, user.email, user.userId);
   }
 
   async refreshToken(refreshToken: string): Promise<AuthTokens> {
@@ -120,7 +121,8 @@ export class AuthService {
       // generate new tokens
       const tokens = await this.generateTokens(
         storedToken.user.id,
-        storedToken.user.email
+        storedToken.user.email,
+        storedToken.user.userId
       );
 
       // delete the old refresh token
@@ -167,10 +169,11 @@ export class AuthService {
   }
 
   private async generateTokens(
+    credentialId: string,
+    email: string,
     userId: string,
-    email: string
   ): Promise<AuthTokens> {
-    const payload = { userId, email };
+    const payload = { credentialId, userId, email };
 
     // Generate access token (always new)
     const accessTokenOptions: SignOptions = {
@@ -185,7 +188,7 @@ export class AuthService {
 
     // Check if user already has a refresh token
     const existingRefreshToken = await prisma.refreshToken.findFirst({
-      where: { credentialId: userId },
+      where: { credentialId },
       orderBy: { createdAt: 'desc' }, // Get the most recent one
     });
 
@@ -225,7 +228,7 @@ export class AuthService {
     } else {
       await prisma.refreshToken.create({
         data: {
-          credentialId: userId,
+          credentialId,
           token: refreshToken,
           expiresAt,
         },
@@ -256,9 +259,23 @@ export class AuthService {
     return user;
   }
 
-  async deleteUser(userId: string): Promise<void> {
-    await prisma.credential.delete({
-      where: { id: userId },
+  async deleteUser(credentialId: string, token?: string): Promise<void> {
+    const result = await prisma.credential.delete({
+      where: { id: credentialId },
     });
+
+    if (result) {
+      try {
+        await axios.delete(`${this.userServiceUrl}/`, {
+          headers: {
+            'X-Internal-Request': 'true', // Internal service call flag
+            Authorization: `Bearer ${token}`,
+            // 'X-Service-Token': process.env.SERVICE_SECRET
+          }
+        });
+      } catch (error: any) {
+        console.log('Failed to delete user profile:', error.message);
+      }
+    }
   }
 }

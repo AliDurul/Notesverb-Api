@@ -55,6 +55,7 @@ export const createProfile = asyncHandler(
 export const deleteProfile = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = req.user?.userId;
+    console.log('userId', req.user);
 
     if (!userId) {
       return res
