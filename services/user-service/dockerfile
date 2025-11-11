@@ -1,0 +1,54 @@
+# Multi-stage build for user-service
+FROM node:20-alpine3.18 AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy shared folder first
+COPY shared ./shared
+
+# Copy user-service package files
+COPY services/user-service/package*.json ./services/user-service/
+
+# Install dependencies for user-service
+WORKDIR /app/services/user-service
+RUN npm install
+
+# Copy user-service source code
+COPY services/user-service/tsconfig.json ./
+COPY services/user-service/prisma ./prisma
+COPY services/user-service/src ./src
+
+# Build the application
+RUN npm run build
+
+# Production stage
+FROM node:20-alpine3.18
+
+# Create app user
+RUN addgroup app && adduser -S -G app app
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY --chown=app:app services/user-service/package*.json ./
+
+# Install only production dependencies
+RUN npm install --only=production
+
+# Copy built application from builder stage
+COPY --chown=app:app --from=builder /app/services/user-service/dist ./dist
+COPY --chown=app:app --from=builder /app/services/user-service/prisma ./prisma
+
+# Generate Prisma Client
+RUN npx prisma generate
+
+# Switch to app user
+USER app
+
+# Expose port
+EXPOSE 3002
+
+# Start the application
+CMD ["npm", "start"]

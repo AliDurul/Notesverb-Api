@@ -1,7 +1,10 @@
+version: '3.8'
+
 services:
+  # PostgreSQL Database
   postgres:
     container_name: notesverb-postgres
-    image: postgres:latest
+    image: postgres:16-alpine
     environment:
       POSTGRES_USER: notesverb
       POSTGRES_PASSWORD: notesverb123
@@ -13,9 +16,165 @@ services:
       - ./init-database.sql:/docker-entrypoint-initdb.d/init-database.sql
     networks:
       - notesverb-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notesverb -d notesverb_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Auth Service
+  auth-service:
+    container_name: notesverb-auth-service
+    build:
+      context: .
+      dockerfile: services/auth-service/dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://notesverb:notesverb123@postgres:5432/notesverb_db?schema=auth
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-your-super-secret-refresh-key-change-in-production}
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - notesverb-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # User Service
+  user-service:
+    container_name: notesverb-user-service
+    build:
+      context: .
+      dockerfile: services/user-service/dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3002
+      DATABASE_URL: postgresql://notesverb:notesverb123@postgres:5432/notesverb_db?schema=user
+      AUTH_SERVICE_URL: http://auth-service:3001
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+    ports:
+      - "3002:3002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    networks:
+      - notesverb-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Note Service
+  note-service:
+    container_name: notesverb-note-service
+    build:
+      context: .
+      dockerfile: services/note-service/dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3003
+      DATABASE_URL: postgresql://notesverb:notesverb123@postgres:5432/notesverb_db?schema=note
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+    ports:
+      - "3003:3003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - notesverb-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Tag Service
+  tag-service:
+    container_name: notesverb-tag-service
+    build:
+      context: .
+      dockerfile: services/tag-service/dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3004
+      DATABASE_URL: postgresql://notesverb:notesverb123@postgres:5432/notesverb_db?schema=tag
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+    ports:
+      - "3004:3004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - notesverb-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # API Gateway
+  api-gateway:
+    container_name: notesverb-api-gateway
+    build:
+      context: .
+      dockerfile: api-gateway/dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      AUTH_SERVICE_URL: http://auth-service:3001
+      USER_SERVICE_URL: http://user-service:3002
+      NOTE_SERVICE_URL: http://note-service:3003
+      TAG_SERVICE_URL: http://tag-service:3004
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      CORS_CREDENTIALS: ${CORS_CREDENTIALS:-true}
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "8080:8080"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      note-service:
+        condition: service_healthy
+      tag-service:
+        condition: service_healthy
+    networks:
+      - notesverb-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
 
 volumes:
   postgres-data:
+    driver: local
+  redis-data:
     driver: local
 
 networks:

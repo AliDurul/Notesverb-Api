@@ -1,0 +1,54 @@
+# Multi-stage build for tag-service
+FROM node:20-alpine3.18 AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy shared folder first
+COPY shared ./shared
+
+# Copy tag-service package files
+COPY services/tag-service/package*.json ./services/tag-service/
+
+# Install dependencies for tag-service
+WORKDIR /app/services/tag-service
+RUN npm install
+
+# Copy tag-service source code
+COPY services/tag-service/tsconfig.json ./
+COPY services/tag-service/prisma ./prisma
+COPY services/tag-service/src ./src
+
+# Build the application
+RUN npm run build
+
+# Production stage
+FROM node:20-alpine3.18
+
+# Create app user
+RUN addgroup app && adduser -S -G app app
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY --chown=app:app services/tag-service/package*.json ./
+
+# Install only production dependencies
+RUN npm install --only=production
+
+# Copy built application from builder stage
+COPY --chown=app:app --from=builder /app/services/tag-service/dist ./dist
+COPY --chown=app:app --from=builder /app/services/tag-service/prisma ./prisma
+
+# Generate Prisma Client
+RUN npx prisma generate
+
+# Switch to app user
+USER app
+
+# Expose port
+EXPOSE 3004
+
+# Start the application
+CMD ["npm", "start"]

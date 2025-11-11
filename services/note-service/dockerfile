@@ -1,0 +1,54 @@
+# Multi-stage build for note-service
+FROM node:20-alpine3.18 AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy shared folder first
+COPY shared ./shared
+
+# Copy note-service package files
+COPY services/note-service/package*.json ./services/note-service/
+
+# Install dependencies for note-service
+WORKDIR /app/services/note-service
+RUN npm install
+
+# Copy note-service source code
+COPY services/note-service/tsconfig.json ./
+COPY services/note-service/prisma ./prisma
+COPY services/note-service/src ./src
+
+# Build the application
+RUN npm run build
+
+# Production stage
+FROM node:20-alpine3.18
+
+# Create app user
+RUN addgroup app && adduser -S -G app app
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY --chown=app:app services/note-service/package*.json ./
+
+# Install only production dependencies
+RUN npm install --only=production
+
+# Copy built application from builder stage
+COPY --chown=app:app --from=builder /app/services/note-service/dist ./dist
+COPY --chown=app:app --from=builder /app/services/note-service/prisma ./prisma
+
+# Generate Prisma Client
+RUN npx prisma generate
+
+# Switch to app user
+USER app
+
+# Expose port
+EXPOSE 3003
+
+# Start the application
+CMD ["npm", "start"]
