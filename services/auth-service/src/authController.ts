@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { AuthService } from "./authService";
 import {
-  createErrorResponse,
+  createServiceError,
   createSuccessResponse,
 } from "@shared/utils";
 import { asyncHandler } from "@shared/middlewares";
@@ -26,15 +26,14 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     .json(createSuccessResponse(tokens, "User logged in successfully"));
 });
 
-export const refreshTokens = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { refreshToken } = req.body;
-    const tokens = await authService.refreshToken(refreshToken);
+export const refreshTokens = asyncHandler(async (req: Request, res: Response) => {
+  const { refreshToken } = req.body;
+  const tokens = await authService.refreshToken(refreshToken);
 
-    res
-      .status(200)
-      .json(createSuccessResponse(tokens, "Tokens refreshed successfully"));
-  }
+  res
+    .status(200)
+    .json(createSuccessResponse(tokens, "Tokens refreshed successfully"));
+}
 );
 
 export const logout = asyncHandler(async (req: Request, res: Response) => {
@@ -46,54 +45,34 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
     .json(createSuccessResponse(null, "User logged out successfully"));
 });
 
-export const validateToken = asyncHandler(
-  async (req: Request, res: Response) => {
-    const authHeader = req.headers["authorization"];
-    const token = authHeader && authHeader.split(" ")[1];
+export const validateToken = asyncHandler(async (req: Request, res: Response) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
 
-    if (!token) {
-      return res.status(401).json(createErrorResponse("No token provided"));
-    }
-
-    const payload = await authService.validateToken(token);
-
-    res.status(200).json(createSuccessResponse(payload, "Token is valid"));
+  if (!token) {
+    throw createServiceError("No token provided", 401);
   }
+
+  const payload = await authService.validateToken(token);
+
+  return res.status(200).json(createSuccessResponse(payload, "Token is valid"));
+}
 );
 
-// export const getProfile = asyncHandler(async (req: Request, res: Response) => {
-//   const userId = req.user?.userId;
+export const deleteAccount = asyncHandler(async (req: Request, res: Response) => {
+  const credentialId = req.user?.credentialId;
 
-//   if (!userId) {
-//     return res.status(401).json(createErrorResponse("Unauthorized"));
-//   }
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
 
-//   const user = await authService.getUserById(userId);
-
-//   if (!user) {
-//     return res.status(404).json(createErrorResponse("User not found"));
-//   }
-
-//   return res
-//     .status(200)
-//     .json(createSuccessResponse(user, "User profile retrieved"));
-// });
-
-export const deleteAccount = asyncHandler(
-  async (req: Request, res: Response) => {
-    const credentialId = req.user?.credentialId;
-
-    const authHeader = req.headers["authorization"];
-    const token = authHeader && authHeader.split(" ")[1];
-
-    if (!credentialId) {
-      return res.status(401).json(createErrorResponse("Unauthorized"));
-    }
-
-    await authService.deleteUser(credentialId, token);
-
-    return res
-      .status(200)
-      .json(createSuccessResponse(null, "Account deleted successfully"));
+  if (!credentialId) {
+    throw createServiceError("Unauthorized", 401);
   }
+
+  await authService.deleteUser(credentialId, token);
+
+  return res
+    .status(200)
+    .json(createSuccessResponse(null, "Account deleted successfully"));
+}
 );

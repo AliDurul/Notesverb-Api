@@ -70,7 +70,7 @@ export class AuthService {
       await prisma.credential.delete({
         where: { id: credential.id },
       });
-
+      // console.log('error', error.message);
       throw createServiceError(error.message, 401);
     }
 
@@ -107,6 +107,7 @@ export class AuthService {
         refreshToken,
         this.jwtRefreshSecret
       ) as JWTPayload;
+      console.log('decoded', decoded);
 
       // check if the refresh token exists in the database
       const storedToken = await prisma.refreshToken.findUnique({
@@ -124,11 +125,6 @@ export class AuthService {
         storedToken.user.email,
         storedToken.user.userId
       );
-
-      // delete the old refresh token
-      await prisma.refreshToken.delete({
-        where: { id: storedToken.id },
-      });
 
       return tokens;
     } catch (error: any) {

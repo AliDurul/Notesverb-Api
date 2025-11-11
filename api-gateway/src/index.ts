@@ -43,6 +43,10 @@ app.use(
 // setup proxy routes
 app.use(proxyRoutes);
 
+app.all('/health', (req, res) => {
+  res.status(200).json({ status: "API Gateway is healthy" });
+});
+
 
 // Handle 404 for undefined routes
 app.get('*splat', (req, res) => {

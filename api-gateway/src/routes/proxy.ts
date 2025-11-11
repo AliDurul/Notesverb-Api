@@ -72,7 +72,7 @@ router.use(
 router.use(
   "/api/users",
   createServiceProxy(servicesConfig.users.url, {
-    "^/api/users": "/users",
+    "^/api/users": "",
   })
 );
 

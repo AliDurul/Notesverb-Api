@@ -13,9 +13,6 @@ export class UserService {
   async createProfile(
     profileData: Partial<UpdateProfileRequest>
   ): Promise<UserProfile> {
-    console.log('profileData', profileData);
-    // sanitize input data
-    // const sanitizedData = this.sanitizeProfileData(profileData);
 
     // create new profile
     const profile = await prisma.userProfile.create({
@@ -44,18 +41,6 @@ export class UserService {
     id: string,
     profileData: Partial<UpdateProfileRequest>
   ): Promise<UserProfile> {
-    // check if profile exists
-    const existingProfile = await prisma.userProfile.findUnique({
-      where: { id },
-    });
-
-    if (!existingProfile) {
-      // if no profile exists, create one
-      return this.updateProfile(id, profileData);
-    }
-
-    // sanitize input data
-    // const sanitizedData = this.sanitizeProfileData(profileData);
 
     // update existing profile
     const updatedProfile = await prisma.userProfile.update({

@@ -14,35 +14,33 @@ export const getProfile = asyncHandler(async (req: Request, res: Response) => {
 
   const profile = await userService.getProfile(userId);
 
-  res
+  return res
     .status(200)
     .json(
       createSuccessResponse(profile, "User profile retrieved successfully")
     );
 });
 
-export const updateProfile = asyncHandler(
-  async (req: Request, res: Response) => {
-    const userId = req.user?.userId;
+export const updateProfile = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user?.userId;
 
-    if (!userId) {
-      return res
-        .status(401)
-        .json(createErrorResponse("User not authenticated"));
-    }
-
-    const profile = await userService.updateProfile(userId, req.body);
-
-    res
-      .status(200)
-      .json(
-        createSuccessResponse(profile, "User profile updated successfully")
-      );
+  if (!userId) {
+    return res
+      .status(401)
+      .json(createErrorResponse("User not authenticated"));
   }
+
+  const profile = await userService.updateProfile(userId, req.body);
+
+  return res
+    .status(200)
+    .json(
+      createSuccessResponse(profile, "User profile updated successfully")
+    );
+}
 );
 
-export const createProfile = asyncHandler(
-  async (req: Request, res: Response) => {
+export const createProfile = asyncHandler(async (req: Request, res: Response) => {
 
     const profile = await userService.createProfile(req.body);
 
@@ -52,8 +50,7 @@ export const createProfile = asyncHandler(
   }
 );
 
-export const deleteProfile = asyncHandler(
-  async (req: Request, res: Response) => {
+export const deleteProfile = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user?.userId;
     console.log('userId', req.user);
 
@@ -65,6 +62,6 @@ export const deleteProfile = asyncHandler(
 
     await userService.deleteProfile(userId);
 
-    res.status(204).json(createSuccessResponse(null, "Profile deleted")); // No content response
+    return res.status(204).json(createSuccessResponse(null, "Profile deleted")); // No content response
   }
 );
