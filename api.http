@@ -3,7 +3,7 @@
 
 
 # Health Check
-get http://localhost:8080/api/auth/health
+get http://localhost:8080/api/tags/health
 
 
 ############################# Api Gateway #############################
@@ -78,3 +78,30 @@ Authorization: {{token}}
     "lastName": "Doe",
     "bio": "Software Developer"
 }
+
+
+### Note Service ###
+
+# @name createNote
+post http://localhost:8080/api/notes/
+Content-Type: application/json
+Authorization: {{token}}
+
+{
+    "title": "New Note",
+    "content": "This is the content of the new note."
+}
+
+### 
+
+# @name getNotes
+get http://localhost:8080/api/notes/?page=1&limit=10
+Authorization: {{token}}
+
+
+### 
+
+# @name getNoteById
+get http://localhost:8080/api/notes/e67d4e13-8abb-4eae-b0ac-3d9de9a69163
+Authorization: {{token}}
+

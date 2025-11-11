@@ -1,5 +1,5 @@
 {
-  "name": "note-service",
+  "name": "tag-service",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -11,9 +11,8 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@prisma/client": "^6.18.0",
-    "@types/express": "^5.0.5",
-    "axios": "^1.13.1",
+    "@prisma/client": "^6.19.0",
+    "axios": "^1.13.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
@@ -22,6 +21,7 @@
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
     "@types/node": "^24.10.0",
     "prisma": "^6.19.0",
     "tsconfig-paths": "^4.2.0",
